@@ -2,8 +2,29 @@
 Changelog for package laser_filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.8.0 (2015-02-03)
+1.8.1 (2016-03-26)
+-----------
+* Remove deprecated warning from footprint filter
+* catkin_make requires cmake_modules in run_depends
+* Restore cmake_modules build dependency
+* Update package.xml
+* Update maintainer email address
+* Add Travis CI config
+* Update scan_to_scan_filter_chain.cpp
+* only publish result if filter succeeded
+* Contributors: Isaac I.Y. Saito, Jon Binney, Jonathan Binney, Kei Okada, Naveed Usmani, asimay
+
+1.7.4 (2015-12-17)
 ------------------
+* [intensity_filter.h] fix: check if cur_bucket value is out of index of histogram array
+* [intensity_filter.h] refactor codes; clearify by using boolean to enable/disable displaying histogram
+* scan_to_scan_filter_chain: make tf filter tolerance customizable
+  0.03 is completely arbitrary and too small in my case.
+* scan2scan filter: only publish result if filter succeeded
+* added cartesian box filter
+* add check inf or nan of input laser_scan intensities
+* scan_to_scan_filter_chain: Only subscribe to /tf if requested by parameter
+* Contributors: Furushchev, Jonathan Binney, Kevin Hallenbeck, Sebastian Pütz, Vincent Rabaud, Yuto Inagaki, v4hn
 
 1.7.3 (2014-09-06)
 ------------------
