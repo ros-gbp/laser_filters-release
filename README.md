@@ -1,3 +1,26 @@
+## laser_filters (jade) - 1.8.1-0
+
+The packages in the `laser_filters` repository were released into the `jade` distro by running `/usr/bin/bloom-release --track jade --rosdistro jade laser_filters --edit-track` on `Sun, 27 Mar 2016 06:19:38 -0000`
+
+The `laser_filters` package was released.
+
+Version of package(s) in repository `laser_filters`:
+
+- upstream repository: https://github.com/ros-perception/laser_filters.git
+- release repository: https://github.com/ros-gbp/laser_filters-release.git
+- rosdistro version: `1.8.0-1`
+- old version: `1.8.0-1`
+- new version: `1.8.1-0`
+
+Versions of tools used:
+
+- bloom version: `0.5.21`
+- catkin_pkg version: `0.2.10`
+- rosdep version: `0.11.4`
+- rosdistro version: `0.4.5`
+- vcstools version: `0.1.38`
+
+
 ## laser_filters (indigo) - 1.8.1-0
 
 The packages in the `laser_filters` repository were released into the `indigo` distro by running `/usr/bin/bloom-release --track indigo --rosdistro indigo laser_filters` on `Sun, 27 Mar 2016 06:17:08 -0000`
