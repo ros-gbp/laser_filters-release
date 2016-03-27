@@ -43,10 +43,10 @@ protected:
   ros::NodeHandle private_nh_;
 
   // Components for tf::MessageFilter
-  tf::TransformListener tf_;
+  tf::TransformListener *tf_;
   message_filters::Subscriber<sensor_msgs::LaserScan> scan_sub_;
-  message_filters::Subscriber<sensor_msgs::LaserScan> no_sub_;
-  tf::MessageFilter<sensor_msgs::LaserScan> tf_filter_;
+  tf::MessageFilter<sensor_msgs::LaserScan> *tf_filter_;
+  double tf_filter_tolerance_;
 
   // Filter Chain
   filters::FilterChain<sensor_msgs::LaserScan> filter_chain_;
@@ -64,7 +64,8 @@ public:
   ScanToScanFilterChain() :
     private_nh_("~"),
     scan_sub_(nh_, "scan", 50),
-    tf_filter_(scan_sub_, tf_, "", 50),
+    tf_(NULL),
+    tf_filter_(NULL),
     filter_chain_("sensor_msgs::LaserScan")
   {
     // Configure filter chain
@@ -82,15 +83,18 @@ public:
     {
       private_nh_.getParam("tf_message_filter_target_frame", tf_message_filter_target_frame);
 
-      tf_filter_.setTargetFrame(tf_message_filter_target_frame);
-      tf_filter_.setTolerance(ros::Duration(0.03));
+      private_nh_.param("tf_message_filter_tolerance", tf_filter_tolerance_, 0.03);
+
+      tf_ = new tf::TransformListener();
+      tf_filter_ = new tf::MessageFilter<sensor_msgs::LaserScan>(scan_sub_, *tf_, "", 50);
+      tf_filter_->setTargetFrame(tf_message_filter_target_frame);
+      tf_filter_->setTolerance(ros::Duration(tf_filter_tolerance_));
 
       // Setup tf::MessageFilter generates callback
-      tf_filter_.registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, _1));
+      tf_filter_->registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, _1));
     }
     else 
     {
-      tf_filter_.connectInput(no_sub_);
       // Pass through if no tf_message_filter_target_frame
       scan_sub_.registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, _1));
     }
@@ -100,6 +104,15 @@ public:
 
     // Set up deprecation printout
     deprecation_timer_ = nh_.createTimer(ros::Duration(5.0), boost::bind(&ScanToScanFilterChain::deprecation_warn, this, _1));
+  }
+
+  // Destructor
+  ~ScanToScanFilterChain()
+  {
+    if (tf_filter_)
+      delete tf_filter_;
+    if (tf_)
+      delete tf_;
   }
   
   // Deprecation warning callback
@@ -113,10 +126,11 @@ public:
   void callback(const sensor_msgs::LaserScan::ConstPtr& msg_in)
   {
     // Run the filter chain
-    filter_chain_.update (*msg_in, msg_);
-    
-    // Publish the output
-    output_pub_.publish(msg_);
+    if (filter_chain_.update(*msg_in, msg_))
+    {
+      //only publish result if filter succeeded
+      output_pub_.publish(msg_);
+    }
   }
 };
 
