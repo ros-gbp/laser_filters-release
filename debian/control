@@ -1,0 +1,12 @@
+Source: ros-jade-laser-filters
+Section: misc
+Priority: extra
+Maintainer: Jon Binney <jon.binney@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), ros-jade-angles, ros-jade-catkin, ros-jade-cmake-modules, ros-jade-filters, ros-jade-laser-geometry, ros-jade-message-filters, ros-jade-pluginlib, ros-jade-roscpp, ros-jade-rostest, ros-jade-sensor-msgs, ros-jade-tf
+Homepage: http://ros.org/wiki/laser_filters
+Standards-Version: 3.9.2
+
+Package: ros-jade-laser-filters
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-jade-angles, ros-jade-cmake-modules, ros-jade-filters, ros-jade-laser-geometry, ros-jade-message-filters, ros-jade-pluginlib, ros-jade-roscpp, ros-jade-sensor-msgs, ros-jade-tf
+Description: Assorted filters designed to operate on 2D planar laser scanners, which use the sensor_msgs/LaserScan type.
