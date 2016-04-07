@@ -1,3 +1,26 @@
+## laser_filters (kinetic) - 1.8.2-1
+
+The packages in the `laser_filters` repository were released into the `kinetic` distro by running `/usr/bin/bloom-release --rosdistro kinetic --track kinetic --new-track laser_filters` on `Thu, 07 Apr 2016 01:16:10 -0000`
+
+The `laser_filters` package was released.
+
+Version of package(s) in repository `laser_filters`:
+
+- upstream repository: https://github.com/ros-perception/laser_filters.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `1.8.2-0`
+- new version: `1.8.2-1`
+
+Versions of tools used:
+
+- bloom version: `0.5.21`
+- catkin_pkg version: `0.2.10`
+- rosdep version: `0.11.4`
+- rosdistro version: `0.4.5`
+- vcstools version: `0.1.38`
+
+
 ## laser_filters (kinetic) - 1.8.2-0
 
 The packages in the `laser_filters` repository were released into the `kinetic` distro by running `/usr/bin/bloom-release --rosdistro kinetic --track kinetic --new-track laser_filters` on `Thu, 07 Apr 2016 01:03:50 -0000`
