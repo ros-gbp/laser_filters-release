@@ -1,3 +1,26 @@
+## laser_filters (lunar) - 1.8.3-1
+
+The packages in the `laser_filters` repository were released into the `lunar` distro by running `/usr/bin/bloom-release laser_filters --track lunar --rosdistro lunar --new-track` on `Mon, 03 Apr 2017 19:41:41 -0000`
+
+The `laser_filters` package was released.
+
+Version of package(s) in repository `laser_filters`:
+
+- upstream repository: https://github.com/ros-perception/laser_filters.git
+- release repository: https://github.com/ros-gbp/laser_filters-release.git
+- rosdistro version: `1.8.3-0`
+- old version: `1.8.3-0`
+- new version: `1.8.3-1`
+
+Versions of tools used:
+
+- bloom version: `0.5.26`
+- catkin_pkg version: `0.3.1`
+- rosdep version: `0.11.5`
+- rosdistro version: `0.6.1`
+- vcstools version: `0.1.39`
+
+
 ## laser_filters (lunar) - 1.8.3-0
 
 The packages in the `laser_filters` repository were released into the `lunar` distro by running `/usr/bin/bloom-release laser_filters --track lunar --rosdistro lunar --new-track` on `Mon, 03 Apr 2017 05:37:10 -0000`
