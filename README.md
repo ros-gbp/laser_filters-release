@@ -1,3 +1,26 @@
+## laser_filters (melodic) - 1.8.6-0
+
+The packages in the `laser_filters` repository were released into the `melodic` distro by running `/usr/bin/bloom-release laser_filters --track melodic --rosdistro melodic --new-track` on `Thu, 12 Apr 2018 03:42:29 -0000`
+
+The `laser_filters` package was released.
+
+Version of package(s) in repository `laser_filters`:
+
+- upstream repository: https://github.com/ros-perception/laser_filters.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `null`
+- new version: `1.8.6-0`
+
+Versions of tools used:
+
+- bloom version: `0.6.4`
+- catkin_pkg version: `0.4.1`
+- rosdep version: `0.12.2`
+- rosdistro version: `0.6.8`
+- vcstools version: `0.1.40`
+
+
 ## laser_filters (indigo) - 1.8.5-0
 
 The packages in the `laser_filters` repository were released into the `indigo` distro by running `/usr/bin/bloom-release laser_filters --track indigo --rosdistro indigo` on `Thu, 07 Sep 2017 01:40:28 -0000`
