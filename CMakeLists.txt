@@ -9,7 +9,7 @@ set(THIS_PACKAGE_ROS_DEPS sensor_msgs roscpp tf filters message_filters
   laser_geometry pluginlib angles)
 
 find_package(catkin REQUIRED COMPONENTS ${THIS_PACKAGE_ROS_DEPS})
-find_package(Boost REQUIRED COMPONENTS system signals)
+find_package(Boost REQUIRED COMPONENTS system)
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 ##############################################################################
@@ -49,6 +49,9 @@ if (CATKIN_ENABLE_TESTING)
   add_dependencies(test_scan_filter_chain gtest)
 
   add_rostest(test/test_scan_filter_chain.launch)
+
+  catkin_add_gtest(test_shadow_detector test/test_shadow_detector.cpp)
+  target_link_libraries(test_shadow_detector ${catkin_LIBRARIES} ${rostest_LIBRARIES})
 endif()
 
 ##############################################################################
