@@ -1,0 +1,12 @@
+Source: ros-melodic-laser-filters
+Section: misc
+Priority: optional
+Maintainer: Jon Binney <jon.binney@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), ros-melodic-angles, ros-melodic-catkin, ros-melodic-filters, ros-melodic-laser-geometry, ros-melodic-message-filters, ros-melodic-pluginlib, ros-melodic-roscpp, ros-melodic-rostest, ros-melodic-sensor-msgs, ros-melodic-tf
+Homepage: http://ros.org/wiki/laser_filters
+Standards-Version: 3.9.2
+
+Package: ros-melodic-laser-filters
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-melodic-angles, ros-melodic-filters, ros-melodic-laser-geometry, ros-melodic-message-filters, ros-melodic-pluginlib, ros-melodic-roscpp, ros-melodic-sensor-msgs, ros-melodic-tf
+Description: Assorted filters designed to operate on 2D planar laser scanners, which use the sensor_msgs/LaserScan type.
