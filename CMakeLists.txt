@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(laser_filters)
 
-set(CMAKE_CXX_STANDARD 11)
-
 ##############################################################################
 # Find dependencies
 ##############################################################################
@@ -26,6 +24,7 @@ generate_dynamic_reconfigure_options(
   cfg/ScanShadowsFilter.cfg
   cfg/SpeckleFilter.cfg
   cfg/SectorFilter.cfg
+  cfg/BoxFilter.cfg
 )
 
 catkin_package(
@@ -48,6 +47,8 @@ add_library(laser_scan_filters
   src/array_filter.cpp
   src/box_filter.cpp
   src/polygon_filter.cpp
+  src/scan_shadow_detector.cpp
+  src/scan_shadows_filter.cpp
   src/speckle_filter.cpp
   src/intensity_filter.cpp
   src/sector_filter.cpp
@@ -57,12 +58,14 @@ target_link_libraries(laser_scan_filters ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_executable(scan_to_cloud_filter_chain src/scan_to_cloud_filter_chain.cpp)
 target_link_libraries(scan_to_cloud_filter_chain ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_library(scan_to_cloud_filter_chain_nodelet src/scan_to_cloud_filter_chain.cpp)
-target_link_libraries(scan_to_cloud_filter_chain_nodelet ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-target_compile_definitions(scan_to_cloud_filter_chain_nodelet PRIVATE BUILDING_NODELET=1)
-
 add_executable(scan_to_scan_filter_chain src/scan_to_scan_filter_chain.cpp)
 target_link_libraries(scan_to_scan_filter_chain ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+add_library(${PROJECT_NAME}_nodelets
+  src/scan_to_cloud_filter_chain.cpp
+  src/scan_to_scan_filter_chain.cpp)
+target_link_libraries(${PROJECT_NAME}_nodelets ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_compile_definitions(${PROJECT_NAME}_nodelets PRIVATE BUILDING_NODELET=1)
 
 add_executable(generic_laser_filter_node src/generic_laser_filter_node.cpp)
 target_link_libraries(generic_laser_filter_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -71,27 +74,27 @@ add_dependencies(laser_scan_filters ${PROJECT_NAME}_gencfg)
 
 if (CATKIN_ENABLE_TESTING)
   if (CATKIN_ENABLE_PERFORMANCE_TESTING)
-    message("Enabling performance tests")
+    message(STATUS "Enabling performance tests")
     add_definitions(-DENABLE_PERFORMANCE)
   else()
-    message("Disabled performance tests")
+    message(STATUS "Disabled performance tests")
   endif()
 
   find_package(rostest)
 
-  add_executable(test_scan_filter_chain test/test_scan_filter_chain.cpp)
-  target_link_libraries(test_scan_filter_chain laser_scan_filters ${rostest_LIBRARIES} ${GTEST_LIBRARIES})
-  add_dependencies(test_scan_filter_chain gtest)
-
-  add_rostest(test/test_scan_filter_chain.launch)
+  add_rostest_gtest(test_scan_filter_chain test/test_scan_filter_chain.launch test/test_scan_filter_chain.cpp)
+  target_link_libraries(test_scan_filter_chain laser_scan_filters ${catkin_LIBRARIES})
   add_rostest(test/test_polygon_filter.launch)
   add_rostest(test/test_speckle_filter.launch)
 
   catkin_add_gtest(test_shadow_detector test/test_shadow_detector.cpp)
-  target_link_libraries(test_shadow_detector ${catkin_LIBRARIES} ${rostest_LIBRARIES})
+  target_link_libraries(test_shadow_detector laser_scan_filters ${catkin_LIBRARIES} ${rostest_LIBRARIES})
 
   catkin_add_gtest(test_speckle_filter test/test_speckle_filter.cpp)
   target_link_libraries(test_speckle_filter laser_scan_filters ${catkin_LIBRARIES} ${rostest_LIBRARIES})
+
+  catkin_add_gtest(test_scan_shadows_filter test/test_scan_shadows_filter.cpp)
+  target_link_libraries(test_scan_shadows_filter laser_scan_filters ${catkin_LIBRARIES} ${rostest_LIBRARIES})
 endif()
 
 ##############################################################################
@@ -100,8 +103,8 @@ endif()
 
 install(TARGETS pointcloud_filters laser_scan_filters 
   scan_to_cloud_filter_chain
-  scan_to_cloud_filter_chain_nodelet
   scan_to_scan_filter_chain
+  ${PROJECT_NAME}_nodelets
   generic_laser_filter_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

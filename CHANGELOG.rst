@@ -2,6 +2,22 @@
 Changelog for package laser_filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.9.1 (2024-07-17)
+------------------
+* Fix polygon padding on filter load
+* Added nodelet for scan filtering pipeline
+* Pass in public node handle from nodelet to allow for correct topic remapping
+* Do not force obsolete C++11 standard
+* Boxfilter dynamic reconfigure for noetic devel
+* Make transform time-out configurable
+* Do not look for specific time in static filter
+* Added examples for InterpolationFilter and LaserScanAngularBoundsFilter
+* Added example config and launch file for scan blob filter
+* Add static polygon filter
+* Improve shadov filter and detector performance
+* Speed up speckle filter implementation
+* Contributors: Bohdan Yarema, Erwin Bonsma, Giorgos Tsamis, Jon Binney, Lars, Lucas Walter, Michael Ripperger, johntgz, rickvanosch, v4hn
+
 1.9.0 (2021-11-06)
 ------------------
 * change_access specifier kinect
