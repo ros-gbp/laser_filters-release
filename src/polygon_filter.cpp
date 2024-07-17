@@ -247,11 +247,8 @@ std::string polygonToString(geometry_msgs::Polygon polygon)
 }
 
 namespace laser_filters{
-LaserScanPolygonFilter::LaserScanPolygonFilter()
-{
-}
 
-bool LaserScanPolygonFilter::configure()
+bool LaserScanPolygonFilterBase::configure()
 {
   XmlRpc::XmlRpcValue polygon_xmlrpc;
   std::string polygon_string;
@@ -260,8 +257,7 @@ bool LaserScanPolygonFilter::configure()
   ros::NodeHandle private_nh("~" + getName());
   dyn_server_.reset(new dynamic_reconfigure::Server<laser_filters::PolygonFilterConfig>(own_mutex_, private_nh));
   dynamic_reconfigure::Server<laser_filters::PolygonFilterConfig>::CallbackType f;
-  f = boost::bind(&laser_filters::LaserScanPolygonFilter::reconfigureCB, this, _1, _2);
-  dyn_server_->setCallback(f);
+  f = [this](auto& config, auto level){ reconfigureCB(config, level); };
 
   bool polygon_set = getParam("polygon", polygon_xmlrpc);
   bool polygon_frame_set = getParam("polygon_frame", polygon_frame_);
@@ -277,7 +273,11 @@ bool LaserScanPolygonFilter::configure()
   param_config.invert = invert_filter_;
   dyn_server_->updateConfig(param_config);
 
-  polygon_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("polygon", 1);
+  // Calling setCallback(f) here calls reconfigureCB() which updates the polygon padding.
+  dyn_server_->setCallback(f);
+
+  polygon_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("polygon", 1, true);
+  is_polygon_published_ = false;
 
   if (!polygon_frame_set)
   {
@@ -296,16 +296,49 @@ bool LaserScanPolygonFilter::configure()
   return polygon_frame_set && polygon_set;
 }
 
+// See https://web.cs.ucdavis.edu/~okreylos/TAship/Spring2000/PointInPolygon.html
+bool LaserScanPolygonFilterBase::inPolygon(tf::Point& point) const {
+  int i, j;
+  bool c = false;
+
+  for (i = 0, j = polygon_.points.size() - 1; i < polygon_.points.size(); j = i++)
+  {
+    if ((polygon_.points.at(i).y > point.y() != (polygon_.points.at(j).y > point.y()) &&
+         (point.x() < (polygon_.points[j].x - polygon_.points[i].x) * (point.y() - polygon_.points[i].y) /
+                              (polygon_.points[j].y - polygon_.points[i].y) +
+                          polygon_.points[i].x)))
+      c = !c;
+  }
+  return c;
+}
+
+void LaserScanPolygonFilterBase::publishPolygon()
+{
+  if (!is_polygon_published_)
+  {
+    geometry_msgs::PolygonStamped polygon_stamped;
+    polygon_stamped.header.frame_id = polygon_frame_;
+    polygon_stamped.header.stamp = ros::Time::now();
+    polygon_stamped.polygon = polygon_;
+    polygon_pub_.publish(polygon_stamped);
+    is_polygon_published_ = true;
+  }
+}
+
+void LaserScanPolygonFilterBase::reconfigureCB(laser_filters::PolygonFilterConfig& config, uint32_t level)
+{
+  invert_filter_ = config.invert;
+  polygon_ = makePolygonFromString(config.polygon, polygon_);
+  padPolygon(polygon_, config.polygon_padding);
+  is_polygon_published_ = false;
+}
+
 bool LaserScanPolygonFilter::update(const sensor_msgs::LaserScan& input_scan,
-                                                   sensor_msgs::LaserScan& output_scan)
+                                    sensor_msgs::LaserScan& output_scan)
 {
   boost::recursive_mutex::scoped_lock lock(own_mutex_);
 
-  geometry_msgs::PolygonStamped polygon_stamped;
-  polygon_stamped.header.frame_id = polygon_frame_;
-  polygon_stamped.header.stamp = ros::Time::now();
-  polygon_stamped.polygon = polygon_;
-  polygon_pub_.publish(polygon_stamped);
+  publishPolygon();
 
   output_scan = input_scan;
 
@@ -386,28 +419,133 @@ bool LaserScanPolygonFilter::update(const sensor_msgs::LaserScan& input_scan,
   return true;
 }
 
-
-bool LaserScanPolygonFilter::inPolygon(tf::Point& point) const
+bool StaticLaserScanPolygonFilter::configure()
 {
-  int i, j;
-  bool c = false;
+  is_polygon_transformed_ = false;
 
-  for (i = 0, j = polygon_.points.size() - 1; i < polygon_.points.size(); j = i++)
-  {
-    if ((polygon_.points.at(i).y > point.y() != (polygon_.points.at(j).y > point.y()) &&
-         (point.x() < (polygon_.points[j].x - polygon_.points[i].x) * (point.y() - polygon_.points[i].y) /
-                              (polygon_.points[j].y - polygon_.points[i].y) +
-                          polygon_.points[i].x)))
-      c = !c;
-  }
-  return c;
+  transform_timeout_ = 5; // Default
+  getParam("transform_timeout", transform_timeout_);
+
+  return LaserScanPolygonFilterBase::configure();
 }
 
-
-void LaserScanPolygonFilter::reconfigureCB(laser_filters::PolygonFilterConfig& config, uint32_t level)
+void StaticLaserScanPolygonFilter::checkCoSineMap(const sensor_msgs::LaserScan& scan_in)
 {
-  invert_filter_ = config.invert;
-  polygon_ = makePolygonFromString(config.polygon, polygon_);
-  padPolygon(polygon_, config.polygon_padding);
+  size_t n_pts = scan_in.ranges.size();
+
+  if (
+    co_sine_map_.rows() != (int)n_pts ||
+    co_sine_map_angle_min_ != scan_in.angle_min ||
+    co_sine_map_angle_max_ != scan_in.angle_max
+  ) {
+    ROS_DEBUG_NAMED("StaticLaserScanPolygonFilter", "No precomputed map given. Computing one.");
+    co_sine_map_ = Eigen::ArrayXXd(n_pts, 2);
+    co_sine_map_angle_min_ = scan_in.angle_min;
+    co_sine_map_angle_max_ = scan_in.angle_max;
+
+    // Spherical->Cartesian projection
+    for (size_t i = 0; i < n_pts; ++i)
+    {
+      co_sine_map_(i, 0) = cos(scan_in.angle_min + (double) i * scan_in.angle_increment);
+      co_sine_map_(i, 1) = sin(scan_in.angle_min + (double) i * scan_in.angle_increment);
+    }
+  }
+}
+
+// Note: This implementation transforms the polygon relative to the laser.
+// It does this lazily and only once. This has the advantage that the check if points fall inside the polygon is fast
+// as the transform is not needed there. Furthermore, it means that the filter chain node
+// does not need to be continuously subscribed to the transform topic, which significantly reduces CPU load.
+// A pre-requisite for this to work is that the transform is static, i.e. the position and orientation of the laser with regard to
+// the base of the robot does not change.
+bool StaticLaserScanPolygonFilter::update(const sensor_msgs::LaserScan& input_scan,
+                                          sensor_msgs::LaserScan& output_scan)
+{
+  boost::recursive_mutex::scoped_lock lock(own_mutex_);
+
+  publishPolygon();
+
+  if (!is_polygon_transformed_) {
+    tf::TransformListener transform_listener;
+
+    std::string error_msg;
+    ROS_DEBUG_NAMED(
+      "StaticLaserScanPolygonFilter", "waitForTransform %s -> %s",
+      polygon_frame_.c_str(), input_scan.header.frame_id.c_str()
+    );
+    bool success = transform_listener.waitForTransform(
+      input_scan.header.frame_id, polygon_frame_,
+      ros::Time(),       // No restrictions on transform time. It is static.
+      ros::Duration(transform_timeout_),
+      ros::Duration(0),  // This setting has no effect
+      &error_msg
+    );
+
+    if (!success)
+    {
+      ROS_WARN_THROTTLE_NAMED(
+          1, "StaticLaserScanPolygonFilter",
+          "Could not get transform, ignoring laser scan! %s", error_msg.c_str()
+      );
+      return false;
+    }
+    else
+    {
+      ROS_INFO_NAMED("StaticLaserScanPolygonFilter", "Obtained transform");
+    }
+
+    try {
+      // Transform each point of polygon. This includes multiple type convertions because of transformPoint API requiring Stamped<Point>
+      // which does not in turn expose coordinate values
+      for (int i = 0; i < polygon_.points.size(); ++i)
+      {
+        tf::Point point(polygon_.points[i].x, polygon_.points[i].y, 0);
+        tf::Stamped<tf::Point> point_stamped(point, ros::Time(), polygon_frame_);
+        tf::Stamped<tf::Point> point_stamped_new;
+        transform_listener.transformPoint(input_scan.header.frame_id, point_stamped, point_stamped_new);
+        geometry_msgs::PointStamped result_point;
+        tf::pointStampedTFToMsg(point_stamped_new, result_point);
+        polygon_.points[i].x = result_point.point.x;
+        polygon_.points[i].y = result_point.point.y;
+      }
+
+      is_polygon_transformed_ = true;
+    }
+    catch (tf::TransformException& ex)
+    {
+      ROS_WARN_THROTTLE_NAMED(1, "StaticLaserScanPolygonFilter", "Exception while transforming polygon");
+      return false;
+    }
+  }
+
+  output_scan = input_scan;
+  checkCoSineMap(input_scan);
+
+  size_t i = 0;
+  size_t i_max = input_scan.ranges.size();
+
+  while (i < i_max)
+  {
+    float range = input_scan.ranges[i];
+
+    float x = co_sine_map_(i, 0) * range;
+    float y = co_sine_map_(i, 1) * range;
+    tf::Point point(x, y, 0);
+
+    if (invert_filter_ != inPolygon(point))
+    {
+      output_scan.ranges[i] = std::numeric_limits<float>::quiet_NaN();
+    }
+
+    ++i;
+  }
+
+  return true;
+}
+
+void StaticLaserScanPolygonFilter::reconfigureCB(laser_filters::PolygonFilterConfig& config, uint32_t level)
+{
+  is_polygon_transformed_ = false;
+  LaserScanPolygonFilterBase::reconfigureCB(config, level);
 }
 }

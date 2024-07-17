@@ -51,6 +51,7 @@ namespace laser_filters
 class WindowValidator
 {
 public:
+  virtual ~WindowValidator() = default;
   virtual bool checkWindowValid(const sensor_msgs::LaserScan& scan, size_t idx, size_t window, double max_range_difference) = 0;
 };
 
@@ -63,18 +64,16 @@ class DistanceWindowValidator : public WindowValidator
       return false;
     }
 
-    for (size_t neighbor_idx_nr = 1; neighbor_idx_nr < window; ++neighbor_idx_nr)
-    {
-      size_t neighbor_idx = idx + neighbor_idx_nr;
-      if (neighbor_idx < scan.ranges.size())  // Out of bound check
-      {
-        const float& neighbor_range = scan.ranges[neighbor_idx];
-        if (neighbor_range != neighbor_range || fabs(neighbor_range - range) > max_range_difference)
-        {
-          return false;
-        }
+    size_t i = idx + 1;
+    size_t i_max = std::min(idx + window, scan.ranges.size());
+    while (i < i_max) {
+      const float& neighbor_range = scan.ranges[i];
+      if (neighbor_range != neighbor_range || fabs(neighbor_range - range) > max_range_difference) {
+        return false;
       }
+      ++i;
     }
+
     return true;
   }
 };
@@ -170,6 +169,9 @@ private:
 
   SpeckleFilterConfig config_ = SpeckleFilterConfig::__getDefault__();
   WindowValidator* validator_;
+
+  // Work area. Vector re-used by update() to avoid repeated dynamic memory allocations
+  std::vector<bool> valid_ranges_work_;
 };
 }
 #endif /* speckle_filter.h */

@@ -35,6 +35,11 @@
 #include "tf/transform_listener.h"
 #include <filters/filter_chain.hpp>
 
+#if BUILDING_NODELET
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.hpp>
+#endif
+
 class ScanToScanFilterChain
 {
 protected:
@@ -61,11 +66,12 @@ protected:
 
 public:
   // Constructor
-  ScanToScanFilterChain() :
-    private_nh_("~"),
+  ScanToScanFilterChain(const ros::NodeHandle& nh = {}, const ros::NodeHandle& pnh = {"~"}) :
+    nh_(nh),
+    private_nh_(pnh),
+    tf_(nullptr),
     scan_sub_(nh_, "scan", 50),
-    tf_(NULL),
-    tf_filter_(NULL),
+    tf_filter_(nullptr),
     filter_chain_("sensor_msgs::LaserScan")
   {
     // Configure filter chain
@@ -91,19 +97,19 @@ public:
       tf_filter_->setTolerance(ros::Duration(tf_filter_tolerance_));
 
       // Setup tf::MessageFilter generates callback
-      tf_filter_->registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, _1));
+      tf_filter_->registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, boost::placeholders::_1));
     }
     else 
     {
       // Pass through if no tf_message_filter_target_frame
-      scan_sub_.registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, _1));
+      scan_sub_.registerCallback(boost::bind(&ScanToScanFilterChain::callback, this, boost::placeholders::_1));
     }
     
     // Advertise output
     output_pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan_filtered", 1000);
 
     // Set up deprecation printout
-    deprecation_timer_ = nh_.createTimer(ros::Duration(5.0), boost::bind(&ScanToScanFilterChain::deprecation_warn, this, _1));
+    deprecation_timer_ = nh_.createTimer(ros::Duration(5.0), boost::bind(&ScanToScanFilterChain::deprecation_warn, this, boost::placeholders::_1));
   }
 
   // Destructor
@@ -136,6 +142,21 @@ public:
   }
 };
 
+#if BUILDING_NODELET
+
+class ScanToScanFilterChainNodelet : public nodelet::Nodelet
+{
+  std::unique_ptr<ScanToScanFilterChain> chain_;
+
+  void onInit() override {
+    chain_ = std::unique_ptr<ScanToScanFilterChain>(new ScanToScanFilterChain(getNodeHandle(), getPrivateNodeHandle()));
+  }
+};
+
+PLUGINLIB_EXPORT_CLASS(ScanToScanFilterChainNodelet, nodelet::Nodelet)
+
+#else
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "scan_to_scan_filter_chain");
@@ -145,3 +166,5 @@ int main(int argc, char **argv)
   
   return 0;
 }
+
+#endif
