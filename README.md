@@ -1,3 +1,26 @@
+## laser_filters (noetic) - 1.9.1-2
+
+The packages in the `laser_filters` repository were released into the `noetic` distro by running `/usr/bin/bloom-release -r=noetic laser_filters` on `Wed, 17 Jul 2024 21:20:10 -0000`
+
+The `laser_filters` package was released.
+
+Version of package(s) in repository `laser_filters`:
+
+- upstream repository: https://github.com/ros-perception/laser_filters.git
+- release repository: https://github.com/ros-gbp/laser_filters-release.git
+- rosdistro version: `1.9.0-1`
+- old version: `1.9.1-1`
+- new version: `1.9.1-2`
+
+Versions of tools used:
+
+- bloom version: `0.12.0`
+- catkin_pkg version: `1.0.0`
+- rosdep version: `0.24.0`
+- rosdistro version: `0.9.1`
+- vcstools version: `0.1.42`
+
+
 ## laser_filters (noetic) - 1.9.1-1
 
 The packages in the `laser_filters` repository were released into the `noetic` distro by running `/usr/bin/bloom-release -r=noetic laser_filters` on `Wed, 17 Jul 2024 21:17:26 -0000`
